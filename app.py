@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import StreamingResponse, JSONResponse
 from rembg import remove
 from io import BytesIO
+import traceback
 
 app = FastAPI()
 
@@ -17,24 +18,24 @@ async def remove_bg(file: UploadFile = File(...)):
         if not contents or len(contents) < 100:
             return JSONResponse(
                 status_code=422,
-                content={"error": "Uploaded file is empty or too small to be an image."}
+                content={"error": "Uploaded file is empty or too small."}
             )
 
         try:
-            # ingen .decode() her
-            output_image = remove(contents)
+            result = remove(contents)
+            return StreamingResponse(BytesIO(result), media_type="image/png")
+
         except Exception as rembg_error:
+            error_message = f"rembg failed: {str(rembg_error)}"
+            print("🛑 rembg error:\n", traceback.format_exc())
             return JSONResponse(
                 status_code=422,
-                content={"error": f"Rembg failed to process image: {str(rembg_error)}"}
+                content={"error": error_message}
             )
 
-        return StreamingResponse(BytesIO(output_image), media_type="image/png")
-
-    except Exception as general_error:
-        import traceback
-        print("Unexpected error in /remove-bg:", traceback.format_exc())
+    except Exception as e:
+        print("❌ Unexpected error:\n", traceback.format_exc())
         return JSONResponse(
             status_code=500,
-            content={"error": f"Unexpected server error: {str(general_error)}"}
+            content={"error": f"Server crashed: {str(e)}"}
         )
