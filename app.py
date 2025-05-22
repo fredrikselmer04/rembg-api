@@ -12,8 +12,28 @@ def index():
 @app.post("/remove-bg")
 async def remove_bg(file: UploadFile = File(...)):
     try:
-        input_image = await file.read()
-        output_image = remove(input_image)
+        contents = await file.read()
+
+        if not contents or len(contents) < 100:
+            return JSONResponse(
+                status_code=422,
+                content={"error": "Uploaded file is empty or too small to be an image."}
+            )
+
+        try:
+            output_image = remove(contents)
+        except Exception as rembg_error:
+            return JSONResponse(
+                status_code=422,
+                content={"error": f"Rembg failed to process image: {str(rembg_error)}"}
+            )
+
         return StreamingResponse(BytesIO(output_image), media_type="image/png")
-    except Exception as e:
-        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+    except Exception as general_error:
+        import traceback
+        print("Unexpected error in /remove-bg:", traceback.format_exc())
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Unexpected server error: {str(general_error)}"}
+        )
