@@ -1,26 +1,21 @@
-from flask import Flask, request, jsonify, send_file
+from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.responses import StreamingResponse
 from rembg import remove
 import requests
 from io import BytesIO
 
-app = Flask(__name__)
+app = FastAPI()
 
-@app.route("/remove-bg", methods=["POST"])
-def remove_bg():
-    data = request.json
-    image_url = data.get("image_url")
-
-    if not image_url:
-        return jsonify({"error": "Missing image_url"}), 400
-
+@app.post("/remove-bg")
+async def remove_bg(image_url: str = Form(...)):
     try:
         response = requests.get(image_url)
         input_image = response.content
         output_image = remove(input_image)
-        return send_file(BytesIO(output_image), mimetype="image/png")
+        return StreamingResponse(BytesIO(output_image), media_type="image/png")
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return {"error": str(e)}
 
-@app.route("/")
-def index():
-    return "Rembg API is running!"
+@app.get("/")
+async def root():
+    return {"message": "Rembg API is running!"}
