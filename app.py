@@ -27,5 +27,6 @@ async def remove_bg(request: Request):
         output_image = remove(input_image)
 
         return StreamingResponse(BytesIO(output_image), media_type="image/png")
+
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
