@@ -6,6 +6,10 @@ from io import BytesIO
 
 app = FastAPI()
 
+@app.get("/")
+def index():
+    return {"message": "Rembg API is running!"}
+
 @app.post("/remove-bg")
 async def remove_bg(request: Request):
     try:
@@ -15,19 +19,13 @@ async def remove_bg(request: Request):
         if not image_url:
             return JSONResponse(content={"error": "Missing image_url"}, status_code=400)
 
-        # Hent bildet fra URL
-        image_response = requests.get(image_url)
-        if image_response.status_code != 200:
-            return JSONResponse(content={"error": "Could not download image"}, status_code=422)
+        response = requests.get(image_url)
+        if response.status_code != 200:
+            return JSONResponse(content={"error": "Image not downloadable"}, status_code=422)
 
-        input_image = image_response.content
+        input_image = response.content
         output_image = remove(input_image)
 
         return StreamingResponse(BytesIO(output_image), media_type="image/png")
-
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
-
-@app.get("/")
-def index():
-    return {"message": "Rembg API is running!"}
