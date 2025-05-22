@@ -21,6 +21,7 @@ async def remove_bg(file: UploadFile = File(...)):
             )
 
         try:
+            # ingen .decode() her
             output_image = remove(contents)
         except Exception as rembg_error:
             return JSONResponse(
